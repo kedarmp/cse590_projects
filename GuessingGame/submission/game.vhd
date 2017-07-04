@@ -59,7 +59,7 @@ shared variable howmany: integer:=0;
 begin
 div: entity work.freq_divider port map(input_clk=>basys_clk,clk=>slow_clk);
 
-process (slow_clk) 
+process (slow_clk, sw) 
 variable which:integer:=0;
 variable pl_1_number: std_logic_vector(15 downto 0);
 variable pl_2_number: std_logic_vector(15 downto 0);
@@ -71,19 +71,43 @@ variable digit_1: std_logic_vector(3 downto 0);
 variable digit_2: std_logic_vector(3 downto 0);
 variable digit_3: std_logic_vector(3 downto 0);
 
+variable initial_sw: std_logic_vector(15 downto 0);
+variable i:integer:=0;
+
 begin
 if rising_edge(slow_clk) then
 howmany := howmany + 1;
 
+--store initial value of switches
+if i=0 then initial_sw:=sw; end if;
+i:=i+1;
+
+if sw/= initial_sw then
+--switch has changed
+--update led
+initial_sw:=sw;
+digit_0 := sw(3 downto 0);
+digit_1 := sw(7 downto 4);
+digit_2 := sw(11 downto 8);
+digit_3 := sw(15 downto 12);
+if (state = 1 or state = 6) then
+state:=6;
+elsif state = 2 or state = 3 or state = 4 or state = 7 then
+state:=7;
+end if;
+end if;
+
+
+
 if btnD = '1' and howmany>381 then
 --store number entered in switches into a variable
-if state = 1 then
+if state = 1 or state = 6 then
 pl_1_number := sw;
 -- then show PL2
 state := 2;
 howmany:=0;
 
-elsif state = 2 or state = 3 or state = 4 then
+elsif state = 2 or state = 3 or state = 4 or state = 7 then
 --start comparing
 tries:=tries + 1;
 --led <= "0000000000000000";
@@ -150,18 +174,20 @@ case which is
     when others=>null;
 end case;
 
-elsif state = 5 then
---show number of tries on screen(currently shown in hex).
---And flash LEDs
---led <= "1111111111111111" ;
-
-triesBinary := std_logic_vector(to_unsigned(tries, triesBinary'length));
-
-
-digit_0 := triesBinary(3 downto 0);
-digit_1 := triesBinary(7 downto 4);
-digit_2 := triesBinary(11 downto 8);
-digit_3 := triesBinary(15 downto 12);
+elsif state = 5 then --or state = 6 then
+--show number of tries on screen(currently shown in hex). And flash LEDs.
+--if state = 5 then --only when player has won
+    triesBinary := std_logic_vector(to_unsigned(tries, triesBinary'length));
+    digit_0 := triesBinary(3 downto 0);
+    digit_1 := triesBinary(7 downto 4);
+    digit_2 := triesBinary(11 downto 8);
+    digit_3 := triesBinary(15 downto 12);
+--else
+--    digit_0 := sw(3 downto 0);
+--    digit_1 := sw(7 downto 4);
+--    digit_2 := sw(11 downto 8);
+--    digit_3 := sw(15 downto 12);
+--end if;
 
 case which is
     
@@ -269,6 +295,230 @@ case which is
     when others=>null;
 end case;
 --led <= "1111111111111111" ;--maybe flash?
+
+elsif state = 6 then
+
+--live display
+case which is
+    
+    when 0=> 
+    --show digit0
+    an<="1110";
+    case digit_0 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+    which := which + 1; -- (space)
+    
+    when 1=>
+    --show digit1
+    an<="1101";
+    
+    case digit_1 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+    which := which + 1;-- Y
+    
+    when 2=> 
+    --show digit2
+    an<="1011";
+    case digit_2 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+    which := which + 1;-- A
+    
+    when 3=> 
+    --show digit3
+    an<="0111";
+    
+    case digit_3 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+     which := 0;-- Y
+    when others=>null;
+end case;
+--led <= "1111111111111111" ;--maybe flash?
+
+
+--live display end
+
+
+--case 7
+elsif state = 7 then
+
+--live display
+case which is
+    
+    when 0=> 
+    --show digit0
+    an<="1110";
+    case digit_0 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+    which := which + 1; -- (space)
+    
+    when 1=>
+    --show digit1
+    an<="1101";
+    
+    case digit_1 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+    which := which + 1;-- Y
+    
+    when 2=> 
+    --show digit2
+    an<="1011";
+    case digit_2 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+    which := which + 1;-- A
+    
+    when 3=> 
+    --show digit3
+    an<="0111";
+    
+    case digit_3 is
+    when "0000" => seg<="1000000";
+    when "0001" => seg<="1111001";
+    when "0010" => seg<="0100100";
+    when "0011" => seg<="0110000";
+    when "0100" => seg<="0011001";
+    when "0101" => seg<="0010010";
+    when "0110" => seg<="0000010";
+    when "0111" => seg<="1111000";
+    when "1000" => seg<="0000000";
+    when "1001" => seg<="0011000";
+    when "1010" => seg<="0001000";
+    when "1011" => seg<="0000011";
+    when "1100" => seg<="1000110";
+    when "1101" => seg<="0100001";
+    when "1110" => seg<="0000110";
+    when "1111" => seg<="0001110";
+    
+    when others=>null;
+    end case;
+     which := 0;-- Y
+    when others=>null;
+end case;
 
 end if;
 end if;
